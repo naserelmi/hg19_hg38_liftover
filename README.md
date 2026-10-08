@@ -70,3 +70,22 @@ For each hg19 BAM or CRAM, the script:
 
 `-p` sets the padding, `-f` skips the whole-file mate scan (faster), `-x` sets another hg38 bwa index, and `-r` sets the hg19 reference used to decode CRAMs. `-h` prints help.
 On one WES CRAM (RBG1037, about 0.9 GB) it took about 2 minutes: 321k read pairs, no orphan mates, 99.9% mapped to hg38.
+
+### Checking the realignment: `code/eval_realign.py`
+    python3 code/eval_realign.py results/unmatched_variants_hg19.tsv sample.cram realigned_hg38/<name>/<name>.hg38.bam ref/hg19.fa.gz eval.tsv
+For each variant, it takes the reads covering the hg19 position and checks where they land in hg38. Reads with MAPQ ≥ 20 count as confident.
+* `supports_liftover`: the confident reads cover the chain-lifted hg38 position.
+* `elsewhere` / `mixed`: they land somewhere else, or split between places.
+* `ambiguous`: fewer than half of the reads are confident.
+* `no_reads`: no read covers the variant in this sample.
+* `no_liftover_pos`: the variant has no lifted position; `hg38_by_reads` says where the reads went.
+
+Test on RBG1037 (hg19 WES), hg38 no-alt index (MAPQ 0 reads: 8.9%; with the alt-containing index: 25.5%):
+
+| category | no reads | ambiguous | supports liftover | elsewhere | mixed | reads placed (no lifted pos) |
+|---|---:|---:|---:|---:|---:|---:|
+| altswapped | 75 | 50 | 1488 | 70 | 51 | – |
+| broken | 38 | 23 | 74 | 39 | 9 | 480 |
+| chrom_changed | 19 | 60 | 185 | 4 | 22 | – |
+| deleted | 76 | 85 | – | – | – | 973 |
+| duplicate_regions_mismatch | 48 | 153 | 146 | 194 | 38 | – |
