@@ -1,0 +1,22 @@
+# data, references and outputs stay out of the repository
+*.txt
+!requirements.txt
+*.tsv
+*.tsv.gz
+*.vcf
+*.vcf.gz
+*.tbi
+*.fa
+*.fa.gz
+*.fai
+*.gzi
+*.chain.gz
+*.bam
+*.bai
+*.cram
+*.crai
+*.fastq.gz
+ref/
+results/
+work*/
+realign*/
