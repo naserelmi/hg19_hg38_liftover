@@ -89,3 +89,27 @@ Test on RBG1037 (hg19 WES), hg38 no-alt index (MAPQ 0 reads: 8.9%; with the alt-
 | chrom_changed | 19 | 60 | 185 | 4 | 22 | – |
 | deleted | 76 | 85 | – | – | – | 973 |
 | duplicate_regions_mismatch | 48 | 153 | 146 | 194 | 38 | – |
+
+## ANNOVAR databases and DataIranome-format tables: `code/make_annovar_db.sh`
+    bash code/make_annovar_db.sh        # after run_pipeline.sh; output in annovar/
+
+| file | variants | content |
+|---|---:|---|
+| `DataIranome_hg38.txt` | 1,468,523 | round-trip-confirmed hg38 variants, in the DataIranome.txt layout (chr pos ref alt het hom AF, no header, `_` = empty allele) |
+| `DataIranome_hg19.txt` | 1,472,521 | all hg19 variants, left-aligned, same layout |
+| `hg38_iranome.txt` + `.idx` | 1,468,523 | ANNOVAR filter database, hg38 |
+| `hg19_iranome.txt` + `.idx` | 1,472,521 | ANNOVAR filter database, hg19 |
+| `conflicting_rows_hg{19,38}.tsv` | 1,854 / 1,840 | variants that had several rows with different counts |
+
+ANNOVAR columns: `Chr Start End Ref Alt Iranome_AF Iranome_Het Iranome_Hom Iranome_AN`. The index uses `index_annovar.pl`, bin 1000.
+
+De-duplication (`code/collapse_dups.py`):
+* DataIranome.txt has 133,585 rows that are exact copies of other rows, so it has 1,474,978 distinct rows. The copies are dropped.
+* After left-alignment, the same indel written at different positions in a repeat becomes one variant with several rows (1,840 in hg38). The row with the highest AF is kept, so a common variant is never reported as rare, and all the rows are listed in `conflicting_rows_*.tsv`.
+
+Use with ANNOVAR: copy the database and its `.idx` into your humandb folder, then:
+
+    table_annovar.pl input.vcf humandb/ -buildver hg38 -out out -protocol iranome -operation f -nastring . -vcfinput
+
+Left-align the VCF first (`bcftools norm -f hg38.fa -m -any`); the databases are left-aligned, so indels only match if the input is too.
+Tested: 5,000 random variants per build were all found with the right AF, and 534 of 535 records from an hg38 VCF were annotated. The one missing record is a duplicated-region variant, which is correctly not in the confirmed set.
