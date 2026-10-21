@@ -113,3 +113,24 @@ Use with ANNOVAR: copy the database and its `.idx` into your humandb folder, the
 
 Left-align the VCF first (`bcftools norm -f hg38.fa -m -any`); the databases are left-aligned, so indels only match if the input is too.
 Tested: 5,000 random variants per build were all found with the right AF, and 534 of 535 records from an hg38 VCF were annotated. The one missing record is a duplicated-region variant, which is correctly not in the confirmed set.
+
+## Region tables (BED-like): `code/liftover_regions.py`
+The same hg19 → hg38 → hg19 round trip for interval tables with a header, e.g. the exon coverage table `CNV_output3.txt`:
+
+    export PATH=/data1/HUVYA/opt/miniforge3/envs/liftover/bin:$PATH
+    python3 code/liftover_regions.py CNV_output3.txt cnv/CNV_output3 --chr chr_num --start start --end end
+
+* Coordinates are 0-based half-open (UCSC/BED). Use `--one-based` for 1-based starts.
+* `-minMatch=1`: every base has to map.
+* A region is matched only if it lands on a primary hg38 chromosome (chr1–22, X, Y, M) and lifts back to the identical chr/start/end.
+
+Output:
+* `<prefix>_hg38.txt`: matched regions with the same header, columns and order as the input. The three coordinate columns hold hg38 positions; every other column is copied unchanged.
+* `<prefix>_unmatched.tsv`: the other regions, with status, reason, hg38 region and the hg19 region after the round trip.
+* `<prefix>_stats.tsv`: totals and % mismatched per hg19 chromosome and overall, with the reasons.
+
+CNV_output3.txt (261,549 exons):
+* Matched: 246,264 (94.16%). On primary chromosomes, 1.31% mismatched (3,260 of 249,424).
+* All 12,125 regions on hg19 haplotype/unplaced contigs are mismatched (`chr6_*_hap*`, `chr17_ctg5_hap1`, `chrUn_gl*`, …), mostly because they land on hg38 alt contigs.
+* Matched regions keep their length and sequence: 244,080 are identical, 1,227 have a few corrected bases, and 957 are inverted (opposite strand) in hg38.
+* TP53, BRCA1 and CFTR land on their known hg38 positions.
