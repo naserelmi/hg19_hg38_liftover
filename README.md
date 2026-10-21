@@ -134,3 +134,22 @@ CNV_output3.txt (261,549 exons):
 * Of the 12,125 regions on hg19 haplotype/unplaced contigs (`chr6_*_hap*`, `chr17_ctg5_hap1`, `chrUn_gl*`, …), 12,025 are mismatched, mostly because they land on hg38 alt contigs. The other 100 sit on unplaced pieces that hg38 placed on primary chromosomes, and they match.
 * Matched regions keep their length and sequence: 244,080 are identical, 1,227 have a few corrected bases, and 957 are inverted (opposite strand) in hg38.
 * TP53, BRCA1 and CFTR land on their known hg38 positions.
+
+## Exon BED from a refGene GTF: `code/gtf2exon_bed.py`
+Writes the `dam_II.bed` layout: `chrom  start(0-based)  end  GENE_n  strand  0`.
+
+    python3 code/gtf2exon_bed.py hg38.refGene.gtf exon_bed/hg38_refGene_exons.bed
+    # --all-contigs       keep alt/unplaced contigs (default: chr1-22, X, Y, M)
+    # --transcript-order  number exons 5'->3' (reversed on the minus strand) instead of left to right
+
+* Only `exon` features are used.
+* For each gene and chromosome, the distinct exon intervals of all its transcripts are numbered 1..n from left to right, so every name is unique.
+* The strand of each exon comes from the transcripts that use it.
+
+hg38.refGene.gtf gives 277,581 exons in 28,403 genes (140,105 on `+`, 137,476 on `-`).
+
+How this differs from dam_II.bed:
+* Its strand column is `+` for every row.
+* 1,343 of its genes restart the numbering for each transcript (e.g. CEP112_1..27 and CEP112_1..25).
+* 711 genes have exact duplicate rows.
+* It comes from an older refGene version: 84% of its intervals are in the current UCSC hg19 refGene.
