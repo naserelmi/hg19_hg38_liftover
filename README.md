@@ -131,6 +131,6 @@ Output:
 
 CNV_output3.txt (261,549 exons):
 * Matched: 246,264 (94.16%). On primary chromosomes, 1.31% mismatched (3,260 of 249,424).
-* All 12,125 regions on hg19 haplotype/unplaced contigs are mismatched (`chr6_*_hap*`, `chr17_ctg5_hap1`, `chrUn_gl*`, …), mostly because they land on hg38 alt contigs.
+* Of the 12,125 regions on hg19 haplotype/unplaced contigs (`chr6_*_hap*`, `chr17_ctg5_hap1`, `chrUn_gl*`, …), 12,025 are mismatched, mostly because they land on hg38 alt contigs. The other 100 sit on unplaced pieces that hg38 placed on primary chromosomes, and they match.
 * Matched regions keep their length and sequence: 244,080 are identical, 1,227 have a few corrected bases, and 957 are inverted (opposite strand) in hg38.
 * TP53, BRCA1 and CFTR land on their known hg38 positions.
