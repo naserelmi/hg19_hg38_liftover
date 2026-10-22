@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Build DataIranome-format files and ANNOVAR filter databases (with .idx) for hg19 and hg38.
-# Usage: bash code/make_annovar_db.sh        (run from /root/naser/liftover after run_pipeline.sh)
+# Usage: bash code/make_annovar_db.sh [matched hg38 table] [out dir]
+#        default: results_strict/1_matched_variants_hg38_strict.tsv -> annovar/   (run from /root/naser/liftover)
 #
 # Sources
-#   hg38: results/1_matched_variants_hg38.tsv  (round-trip-confirmed liftover)
+#   hg38: strict set from code/strict_filter.py (all checks agree), or another matched table given as $1
 #   hg19: work_data/orig19.norm.vcf            (DataIranome.txt, left-aligned/normalized on hg19)
 # Both are de-duplicated (exact copies dropped; variants with conflicting rows keep the highest-AF row,
 # see collapse_dups.py) so each variant appears once.
@@ -20,11 +21,12 @@ D=/root/naser/liftover
 C=$D/code
 ANNOVAR=/data1/HUVYA/opt/anaconda/annovar
 BIN=1000
-O=$D/annovar; mkdir -p $O; cd $O
+MATCHED=$(readlink -f ${1:-$D/results_strict/1_matched_variants_hg38_strict.tsv})
+O=$(readlink -m ${2:-$D/annovar}); mkdir -p $O; cd $O
 
 echo "## DataIranome-format tables"
 python3 $C/vcf2table.py $D/work_data/orig19.norm.vcf | cut -f1-7 > hg19.tmp
-cut -f1-7 $D/results/1_matched_variants_hg38.tsv > hg38.tmp
+cut -f1-7 $MATCHED > hg38.tmp
 for b in hg19 hg38; do
   python3 $C/collapse_dups.py $b.tmp DataIranome_$b.txt conflicting_rows_$b.tsv
   rm $b.tmp

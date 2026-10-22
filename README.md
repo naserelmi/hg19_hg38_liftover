@@ -173,3 +173,34 @@ It was run with the same round-trip strategy on `work_data/orig19.norm.vcf`, onc
 * **Swapped indels are a weakness of the UCSC-based pipeline.** It lifts only the anchor base, so it misses indels where hg38's reference already contains the hg19 ALT allele. Example: hg19 chr1:15769876 G>GC; hg38 has the extra C, so the correct hg38 record is GC>G with AF = 1 − AF. 261 indels (202 insertions, 59 deletions) and 35 SNVs that this pipeline calls matched are swapped or multi-allelic in transanno.
 * **transanno is stricter about duplicated regions.** It rejects 1,067 UCSC-matched variants as `MULTIMAP` (they map to several places).
 * **The minimap2 chains are less reliable in segmental duplications.** For 845 variants matched by both tools, the minimap2 chain picks another copy (> 10 kb away). By identity of the 101 bp around the variant, the UCSC position is closer in 739 of them and the minimap2 position in 23.
+
+## Strict hg38 set (preferred): `code/strict_filter.py`, `code/strict_vcftab.py`
+A variant is kept only if every check agrees; otherwise it is omitted. Missing a variant is preferred over keeping a wrong one.
+1. The UCSC liftOver round trip is identical.
+2. transanno with the UCSC chains gives an identical round trip, no REF/ALT swap, and the same hg38 position/alleles.
+3. transanno with the minimap2 chains gives the same.
+4. The hg38 reference allele is the same as in hg19.
+5. The 25 bp either side of the variant are identical in hg19 and hg38 (reverse-complemented on minus-strand chains).
+
+Iranome (from /root/naser/liftover):
+
+    python3 code/strict_filter.py results_strict      # -> results_strict/1_matched_variants_hg38_strict.tsv, omitted_variants.tsv
+    bash code/make_annovar_db.sh                       # strict set -> annovar/ (DataIranome_hg38.txt, hg38_iranome.txt + .idx)
+
+Result: 1,598,538 of 1,608,563 variants kept (99.38%); 1,463,303 distinct variants in `annovar/DataIranome_hg38.txt`. Omitted, by first failed check:
+
+| check | omitted |
+|---|---:|
+| UCSC round trip not identical | 4,400 |
+| flanking 25 bp differ | 2,910 |
+| transanno + UCSC chain disagrees (1,102 multi-mapping, 296 swapped, others) | 1,639 |
+| transanno + minimap2 chain disagrees | 1,175 |
+
+The earlier UCSC-only build is kept in `annovar_ucsc_only/`. It contains 262 of the 275 variants that transanno identified as swapped, which are wrong in hg38.
+
+VCF-style tables (e.g. AllVcf_V2.txt), after `vcftab_roundtrip.sh` and both transanno runs:
+
+    bash code/transanno_roundtrip.sh ucsc_chain     ref/hg19ToHg38.over.chain.gz ref/hg38ToHg19.over.chain.gz allvcf/work/orig19.norm.vcf allvcf/transanno
+    bash code/transanno_roundtrip.sh minimap2_chain transanno/chains/hg19ToHg38.transanno.chain.gz transanno/chains/hg38ToHg19.transanno.chain.gz allvcf/work/orig19.norm.vcf allvcf/transanno
+    python3 code/strict_vcftab.py AllVcf_V2.txt allvcf/work allvcf/transanno allvcf/AllVcf_V2
+    # -> AllVcf_V2_hg38_strict.txt (same structure, hg38), AllVcf_V2_not_lifted_hg19.txt (original rows), _not_lifted_reasons.tsv, _strict_stats.tsv
