@@ -20,7 +20,10 @@ F = int(sys.argv[sys.argv.index("--flank") + 1]) if "--flank" in sys.argv else 2
 R = "/root/naser/liftover/ref"
 g19, g38 = pysam.FastaFile(f"{R}/hg19.fa"), pysam.FastaFile(f"{R}/hg38.fa")
 cache = {}
-seq = lambda g, tag, c: cache.setdefault((tag, c), g.fetch(c).upper())
+def seq(g, tag, c):
+    if (tag, c) not in cache:
+        cache[(tag, c)] = g.fetch(c).upper()
+    return cache[(tag, c)]
 rc = lambda s: s.translate(str.maketrans("ACGTN", "TGCAN"))[::-1]
 
 

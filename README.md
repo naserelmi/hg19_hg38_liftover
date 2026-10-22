@@ -204,3 +204,6 @@ VCF-style tables (e.g. AllVcf_V2.txt), after `vcftab_roundtrip.sh` and both tran
     bash code/transanno_roundtrip.sh minimap2_chain transanno/chains/hg19ToHg38.transanno.chain.gz transanno/chains/hg38ToHg19.transanno.chain.gz allvcf/work/orig19.norm.vcf allvcf/transanno
     python3 code/strict_vcftab.py AllVcf_V2.txt allvcf/work allvcf/transanno allvcf/AllVcf_V2
     # -> AllVcf_V2_hg38_strict.txt (same structure, hg38), AllVcf_V2_not_lifted_hg19.txt (original rows), _not_lifted_reasons.tsv, _strict_stats.tsv
+
+AllVcf_V2.txt strict result: 11,499,211 of 11,659,673 variants kept (98.62%). The 160,462 not lifted are in `allvcf/AllVcf_V2_not_lifted_hg19.txt` (original rows, unchanged).
+By first failed check: UCSC round trip not identical 93,027; flanking 25 bp differ 23,956; transanno + minimap2 chain disagrees 32,218; transanno + UCSC chain disagrees 11,261 (4,407 REF/ALT swaps).
