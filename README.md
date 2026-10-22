@@ -153,3 +153,23 @@ How this differs from dam_II.bed:
 * 1,343 of its genes restart the numbering for each transcript (e.g. CEP112_1..27 and CEP112_1..25).
 * 711 genes have exact duplicate rows.
 * It comes from an older refGene version: 84% of its intervals are in the current UCSC hg19 refGene.
+
+## Comparison with transanno: `code/transanno_roundtrip.sh`, `code/compare_tools.py`
+transanno 0.4.5 is installed as conda env `transanno` (bioconda; ARM build) together with minimap2 2.31.
+It was run with the same round-trip strategy on `work_data/orig19.norm.vcf`, once with the UCSC chains and once with chains built as its README describes:
+
+    bash code/transanno_make_chains.sh      # minimap2 -cx asm5 --cs (primary chromosomes) + transanno minimap2chain  -> transanno/chains/
+    bash code/transanno_roundtrip.sh ucsc_chain     ref/hg19ToHg38.over.chain.gz ref/hg38ToHg19.over.chain.gz
+    bash code/transanno_roundtrip.sh minimap2_chain transanno/chains/hg19ToHg38.transanno.chain.gz transanno/chains/hg38ToHg19.transanno.chain.gz
+    python3 code/compare_tools.py UCSC_liftOver work_data/rt.roundtrip_all.tsv transanno_UCSCchain transanno/ucsc_chain/rt.roundtrip_all.tsv transanno/ucsc_chain/fwd_ref_changed.ids transanno/cmp
+
+| run | round trip identical, no swap | REF/ALT swapped by the tool |
+|---|---:|---:|
+| UCSC liftOver + UCSC chain (this pipeline) | 1,604,163 (99.73%) | 1,734 (reported, not lifted) |
+| transanno + UCSC chain | 1,603,022 (99.66%) | 2,690 |
+| transanno + minimap2 chain | 1,603,426 (99.68%) | 2,909 |
+
+* All three runs agree on the same hg38 position and alleles for 1,601,448 variants (99.56%).
+* **Swapped indels are a weakness of the UCSC-based pipeline.** It lifts only the anchor base, so it misses indels where hg38's reference already contains the hg19 ALT allele. Example: hg19 chr1:15769876 G>GC; hg38 has the extra C, so the correct hg38 record is GC>G with AF = 1 − AF. 261 indels (202 insertions, 59 deletions) and 35 SNVs that this pipeline calls matched are swapped or multi-allelic in transanno.
+* **transanno is stricter about duplicated regions.** It rejects 1,067 UCSC-matched variants as `MULTIMAP` (they map to several places).
+* **The minimap2 chains are less reliable in segmental duplications.** For 845 variants matched by both tools, the minimap2 chain picks another copy (> 10 kb away). By identity of the 101 bp around the variant, the UCSC position is closer in 739 of them and the minimap2 position in 23.
